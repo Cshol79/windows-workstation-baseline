@@ -2,6 +2,14 @@
 # Author: Christopher B. Sholmire
 # Purpose: Apply foundational security and configuration settings
 
+# Ensure script is running as Administrator
+If (-NOT ([Security.Principal.WindowsPrincipal] 
+    [Security.Principal.WindowsIdentity]::GetCurrent()
+    ).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator"))
+{
+    Write-Host "This script must be run as Administrator." -ForegroundColor Red
+    Exit
+}
 Write-Output "Starting baseline configuration..."
 
 # --- Enable Windows Firewall Profiles ---
