@@ -1,2 +1,16 @@
-# windows-workstation-baseline
-Disables unnecessary services  Applies common security baselines  Configures firewall defaults  Enforces password / lock policies  Removes bloatware (optional section)  Enables BitLocker check (if applicable)  Sets Windows Update behavior  Outputs a configuration report
+# Windows Workstation Baseline
+
+PowerShell-based configuration script for Windows 10/11 workstations.
+
+## Purpose
+Provide a repeatable, security-focused baseline for standalone or SMB environments.
+
+## Features
+- Enables Windows Firewall profiles
+- Prepares system for additional hardening
+- Designed for lab and real-world deployment
+
+## Usage
+Run PowerShell as Administrator:
+
+.\baseline.ps1
