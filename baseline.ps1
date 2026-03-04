@@ -5,7 +5,8 @@
 
 param(
     [switch]$RemoveBloat,
-    [switch]$VerboseMode
+    [switch]$VerboseMode,
+    [switch]$AuditOnly
 )
 
 # Ensure script is running as Administrator
@@ -22,46 +23,70 @@ if ($VerboseMode) {
     $VerbosePreference = "Continue"
 }
 
+function Invoke-Action {
+    param(
+        [string]$Message,
+        [scriptblock]$Action
+    )
+
+    if ($AuditOnly) {
+        Write-Output "[AUDIT MODE] $Message"
+    }
+    else {
+        Write-Output $Message
+        & $Action
+    }
+}
+
 Write-Output "Starting Windows Workstation Baseline Configuration..."
-Start-Transcript -Path ".\baseline-log.txt" -Append
+
+if (-not $AuditOnly) {
+    Start-Transcript -Path ".\baseline-log.txt" -Append
+}
 
 # --------------------------------------------------
 # 1. Firewall Configuration
 # --------------------------------------------------
-Write-Output "Enabling Windows Firewall profiles..."
-Set-NetFirewallProfile -Profile Domain,Public,Private -Enabled True
+Invoke-Action "Enabling Windows Firewall profiles..." {
+    Set-NetFirewallProfile -Profile Domain,Public,Private -Enabled True
+}
 
 # --------------------------------------------------
 # 2. Windows Update Service Configuration
 # --------------------------------------------------
-Write-Output "Ensuring Windows Update service is enabled..."
-Set-Service -Name wuauserv -StartupType Automatic
-Start-Service -Name wuauserv
+Invoke-Action "Configuring Windows Update service..." {
+    Set-Service -Name wuauserv -StartupType Automatic
+    Start-Service -Name wuauserv
+}
 
 # --------------------------------------------------
 # 3. Power & Lock Screen Configuration
 # --------------------------------------------------
-Write-Output "Configuring power and lock screen timeout..."
-powercfg -change -monitor-timeout-ac 15
-powercfg -change -monitor-timeout-dc 10
+Invoke-Action "Configuring power timeouts..." {
+    powercfg -change -monitor-timeout-ac 15
+    powercfg -change -monitor-timeout-dc 10
+}
 
 # --------------------------------------------------
 # 4. Optional Consumer Bloatware Removal
 # --------------------------------------------------
 if ($RemoveBloat) {
-    Write-Output "Removing common consumer applications..."
-
-    Get-AppxPackage *Xbox* | Remove-AppxPackage -ErrorAction SilentlyContinue
-    Get-AppxPackage *ZuneMusic* | Remove-AppxPackage -ErrorAction SilentlyContinue
-    Get-AppxPackage *BingWeather* | Remove-AppxPackage -ErrorAction SilentlyContinue
-    Get-AppxPackage *SkypeApp* | Remove-AppxPackage -ErrorAction SilentlyContinue
+    Invoke-Action "Removing common consumer applications..." {
+        Get-AppxPackage *Xbox* | Remove-AppxPackage -ErrorAction SilentlyContinue
+        Get-AppxPackage *ZuneMusic* | Remove-AppxPackage -ErrorAction SilentlyContinue
+        Get-AppxPackage *BingWeather* | Remove-AppxPackage -ErrorAction SilentlyContinue
+        Get-AppxPackage *SkypeApp* | Remove-AppxPackage -ErrorAction SilentlyContinue
+    }
 }
 
 # --------------------------------------------------
-# 5. BitLocker Status Check
+# 5. BitLocker Status Check (Read-Only)
 # --------------------------------------------------
 Write-Output "Checking BitLocker status..."
 Get-BitLockerVolume
 
 Write-Output "Baseline configuration complete."
-Stop-Transcript
+
+if (-not $AuditOnly) {
+    Stop-Transcript
+}
